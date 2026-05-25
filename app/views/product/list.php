@@ -83,7 +83,6 @@ if ($hasFilter):
         <?php if(isset($_GET['min_price']) || isset($_GET['max_price'])): ?>
             <?php if(isset($_GET['keyword']) || isset($_GET['category'])) echo ' - '; ?>
             Giá: 
-            <!-- ✅ SỬA: Ép kiểu float và kiểm tra !empty -->
             <strong><?php echo !empty($_GET['min_price']) ? number_format((float)$_GET['min_price'], 0, ',', '.') : '0'; ?></strong>
             - 
             <strong><?php echo !empty($_GET['max_price']) ? number_format((float)$_GET['max_price'], 0, ',', '.') : '∞'; ?></strong> ₫
@@ -131,7 +130,6 @@ if ($hasFilter):
                     <?php echo htmlspecialchars(substr($product->description, 0, 80)); ?>...
                 </p>
                 <h6 class="text-danger fw-bold mb-2">
-                    <!-- ✅ SỬA: Ép kiểu float cho price -->
                     <?php echo number_format((float)($product->price ?? 0), 0, ',', '.'); ?> ₫
                 </h6>
                 <span class="badge bg-info text-dark">
@@ -141,6 +139,11 @@ if ($hasFilter):
             
             <div class="card-footer bg-white border-top-0">
                 <div class="d-flex gap-2">
+                    <button onclick="addToCart(<?php echo $product->id; ?>)" 
+                            class="btn btn-success btn-sm flex-grow-1" 
+                            title="Thêm vào giỏ hàng">
+                        <i class="fas fa-cart-plus"></i> Thêm vào giỏ
+                    </button>
                     <a href="/Product/edit/<?php echo $product->id; ?>" 
                        class="btn btn-warning btn-sm flex-grow-1" title="Sửa">
                         <i class="fas fa-edit"></i>
@@ -170,5 +173,68 @@ if ($hasFilter):
 <?php endif; ?>
 
 <?php endif; ?>
+
+<!-- JavaScript for AJAX Add to Cart -->
+<script>
+// Function to add product to cart via AJAX
+function addToCart(productId) {
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    
+    fetch('/Product/addToCartAjax', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update cart badge
+            updateCartBadge(data.totalItems);
+            
+            // Show success notification
+            showNotification('success', data.message);
+        } else {
+            showNotification('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', 'Có lỗi xảy ra. Vui lòng thử lại!');
+    });
+}
+
+// Function to update cart badge
+function updateCartBadge(count) {
+    const badge = document.getElementById('cart-badge');
+    if (badge) {
+        badge.textContent = count;
+        if (count > 0) {
+            badge.classList.remove('d-none');
+        } else {
+            badge.classList.add('d-none');
+        }
+    }
+}
+
+// Function to show notification
+function showNotification(type, message) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto dismiss after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+</script>
 
 <?php include 'app/views/shares/footer.php'; ?>

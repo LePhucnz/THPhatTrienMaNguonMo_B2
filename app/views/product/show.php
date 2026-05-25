@@ -8,11 +8,13 @@
         <div class="card-body">
             <?php if($product): ?>
             <div class="row">
+                <!-- Hình ảnh sản phẩm -->
                 <div class="col-md-6">
                     <?php if($product->image): ?>
                         <img src="/public/<?php echo htmlspecialchars($product->image); ?>" 
                              class="img-fluid rounded" 
-                             alt="<?php echo htmlspecialchars($product->name); ?>">
+                             alt="<?php echo htmlspecialchars($product->name); ?>"
+                             style="max-height: 500px; width: 100%; object-fit: cover;">
                     <?php else: ?>
                         <div class="bg-light text-center py-5 rounded">
                             <i class="fas fa-image fa-3x text-muted"></i>
@@ -20,25 +22,48 @@
                         </div>
                     <?php endif; ?>
                 </div>
+                
+                <!-- Thông tin sản phẩm -->
                 <div class="col-md-6">
-                    <h3 class="text-dark font-weight-bold"><?php echo htmlspecialchars($product->name); ?></h3>
-                    <p class="text-muted"><?php echo nl2br(htmlspecialchars($product->description)); ?></p>
-                    <h4 class="text-danger font-weight-bold">
+                    <h3 class="text-dark font-weight-bold mb-3">
+                        <?php echo htmlspecialchars($product->name); ?>
+                    </h3>
+                    
+                    <p class="text-muted">
+                        <?php echo nl2br(htmlspecialchars($product->description)); ?>
+                    </p>
+                    
+                    <h4 class="text-danger font-weight-bold my-3">
                         <?php echo number_format((float)($product->price ?? 0), 0, ',', '.'); ?> ₫
                     </h4>
-                    <p><strong>Danh mục:</strong> 
+                    
+                    <p class="mb-3">
+                        <strong>Danh mục:</strong> 
                         <span class="badge bg-info text-dark">
                             <?php echo htmlspecialchars($product->category_name ?? 'Chưa phân loại'); ?>
                         </span>
                     </p>
                     
-                    <!-- ✅ HIỂN THỊ ĐIỂM TRUNG BÌNH -->
-                    <?php if(isset($averageRating)): ?>
-                    <div class="mt-3 p-3 bg-light rounded">
+                    <!-- ✅ NÚT THÊM VÀO GIỎ HÀNG -->
+                    <div class="mt-4 d-flex flex-wrap gap-2">
+                        <button onclick="addToCart(<?php echo $product->id; ?>)" 
+                                class="btn btn-success btn-lg px-4"
+                                id="btn-add-to-cart">
+                            <i class="fas fa-cart-plus"></i> Thêm vào giỏ hàng
+                        </button>
+                        
+                        <a href="/Product" class="btn btn-secondary btn-lg px-4">
+                            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+                        </a>
+                    </div>
+                    
+                    <!-- Đánh giá trung bình (nếu có) -->
+                    <?php if(isset($averageRating) && $averageRating['total'] > 0): ?>
+                    <div class="mt-4 p-3 bg-light rounded">
                         <div class="d-flex align-items-center">
                             <div class="mr-3">
                                 <h2 class="mb-0 text-primary font-weight-bold">
-                                    <?php echo $averageRating['average']; ?>
+                                    <?php echo $averageRating['average']; ?>/5
                                 </h2>
                                 <div class="text-warning">
                                     <?php 
@@ -53,31 +78,10 @@
                                 <p class="mb-1 text-muted">
                                     <?php echo $averageRating['total']; ?> đánh giá
                                 </p>
-                                <small class="text-muted">
-                                    <?php 
-                                    // Phân loại đánh giá
-                                    if($averageRating['average'] >= 4.5) {
-                                        echo '<span class="text-success"><i class="fas fa-check-circle"></i> Xuất sắc</span>';
-                                    } elseif($averageRating['average'] >= 4) {
-                                        echo '<span class="text-primary"><i class="fas fa-thumbs-up"></i> Rất tốt</span>';
-                                    } elseif($averageRating['average'] >= 3) {
-                                        echo '<span class="text-warning"><i class="fas fa-minus-circle"></i> Trung bình</span>';
-                                    } else {
-                                        echo '<span class="text-danger"><i class="fas fa-times-circle"></i> Chưa tốt</span>';
-                                    }
-                                    ?>
-                                </small>
                             </div>
                         </div>
                     </div>
                     <?php endif; ?>
-                    <!-- ✅ KẾT THÚC HIỂN THỊ ĐIỂM TRUNG BÌNH -->
-                    
-                    <div class="mt-4">
-                        <a href="/Product" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left"></i> Quay lại danh sách
-                        </a>
-                    </div>
                 </div>
             </div>
 
@@ -99,7 +103,12 @@
                                     <label class="form-label">Tên của bạn:</label>
                                     <input type="text" name="username" class="form-control" 
                                            placeholder="Nhập tên hoặc để trống" 
-                                           value="<?php echo SessionHelper::isLoggedIn() ? htmlspecialchars($_SESSION['username'] ?? '') : ''; ?>">
+                                           value="<?php 
+                                           if (session_status() === PHP_SESSION_NONE) {
+                                               session_start();
+                                           }
+                                           echo htmlspecialchars($_SESSION['username'] ?? ''); 
+                                           ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Số sao đánh giá:</label>
@@ -163,7 +172,6 @@
                     </div>
                 <?php endif; ?>
             </div>
-            <!-- ✅ KẾT THÚC PHẦN BÌNH LUẬN -->
 
             <?php else: ?>
             <div class="alert alert-danger text-center py-5">
@@ -175,5 +183,104 @@
         </div>
     </div>
 </div>
+
+<!-- JavaScript for AJAX Add to Cart -->
+<script>
+// Function to add product to cart via AJAX
+function addToCart(productId) {
+    const btn = document.getElementById('btn-add-to-cart');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang thêm...';
+    }
+    
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    
+    fetch('/Product/addToCartAjax', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('HTTP error: ' + response.status);
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Update cart badge
+            updateCartBadge(data.totalItems);
+            
+            // Show success notification
+            showNotification('success', data.message);
+            
+            // Reset button
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Đã thêm!';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-cart-plus"></i> Thêm vào giỏ hàng';
+                    btn.disabled = false;
+                }, 1500);
+            }
+        } else {
+            showNotification('error', data.message || 'Có lỗi xảy ra');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-cart-plus"></i> Thêm vào giỏ hàng';
+                btn.disabled = false;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', '❌ Lỗi kết nối. Vui lòng thử lại!');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-cart-plus"></i> Thêm vào giỏ hàng';
+            btn.disabled = false;
+        }
+    });
+}
+
+// Function to update cart badge (from header.php)
+function updateCartBadge(count) {
+    const badge = document.getElementById('cart-badge');
+    if (badge) {
+        badge.textContent = count;
+        if (count > 0) {
+            badge.classList.remove('d-none');
+            badge.style.animation = 'none';
+            setTimeout(() => badge.style.animation = 'pulse 0.3s ease', 10);
+        } else {
+            badge.classList.add('d-none');
+        }
+    }
+}
+
+// Function to show notification
+function showNotification(type, message) {
+    // Remove old notification
+    const oldNotif = document.getElementById('ajax-notification');
+    if (oldNotif) oldNotif.remove();
+    
+    const notification = document.createElement('div');
+    notification.id = 'ajax-notification';
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show shadow`;
+    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 320px; max-width: 400px;';
+    notification.innerHTML = `
+        <strong>${type === 'success' ? '✅ Thành công!' : '❌ Lỗi!'}</strong><br>
+        ${message}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+</script>
 
 <?php include 'app/views/shares/footer.php'; ?>

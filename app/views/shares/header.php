@@ -1,3 +1,9 @@
+<?php
+// Khởi tạo session an toàn nếu chưa có
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -16,6 +22,34 @@
         .category-nav .nav-link:hover { color: #28a745; }
         .category-nav .nav-link.active { color: #28a745; font-weight: bold; border-bottom: 2px solid #28a745; }
         .admin-link { color: #dc3545 !important; font-weight: bold; }
+        
+        /* Badge giỏ hàng */
+        .cart-badge {
+            position: absolute;
+            top: -8px;
+            right: -10px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 7px;
+            font-size: 11px;
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+            line-height: 1;
+            animation: pulse 0.3s ease;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        
+        .cart-icon-wrapper {
+            position: relative;
+            display: inline-block;
+        }
         
         /* Banner Slider Styles */
         .banner-slider {
@@ -124,17 +158,38 @@
             <div class="row align-items-center">
                 <div class="col-md-3">
                     <h2 class="text-white mb-0">
-                        <i class="fas fa-store"></i> WebBanHang
+                        <!-- ✅ Yêu cầu 3: WebBanHang có link dẫn về trang list -->
+                        <a href="/Product" style="color: white; text-decoration: none; transition: opacity 0.2s;" 
+                           onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                            <i class="fas fa-store"></i> WebBanHang
+                        </a>
                     </h2>
                 </div>
                 <div class="col-md-6">
                     <form action="/Product/search" method="GET" class="search-box d-flex">
-                        <input type="text" name="keyword" class="form-control" placeholder="Tìm kiếm sản phẩm..." value="<?php echo $_GET['keyword'] ?? ''; ?>">
+                        <input type="text" name="keyword" class="form-control" placeholder="Tìm kiếm sản phẩm..." 
+                               value="<?php echo htmlspecialchars($_GET['keyword'] ?? ''); ?>">
                         <button type="submit" class="btn btn-warning"><i class="fas fa-search"></i></button>
                     </form>
                 </div>
                 <div class="col-md-3 text-white text-right">
-                    <a href="/Product/cart" class="text-white mr-3"><i class="fas fa-shopping-cart"></i> Giỏ hàng</a>
+                    <!-- ✅ Yêu cầu 2: Icon giỏ hàng hiển thị số lượng -->
+                    <a href="/Product/cart" class="text-white mr-3 position-relative" style="text-decoration: none;">
+                        <span class="cart-icon-wrapper">
+                            <i class="fas fa-shopping-cart fa-lg"></i>
+                            <?php
+                            // Tính số lượng sản phẩm trong giỏ (an toàn với session)
+                            $cartCount = 0;
+                            if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+                                $cartCount = array_sum(array_column($_SESSION['cart'], 'quantity'));
+                            }
+                            ?>
+                            <span id="cart-badge" class="cart-badge <?php echo $cartCount > 0 ? '' : 'd-none'; ?>">
+                                <?php echo $cartCount; ?>
+                            </span>
+                        </span>
+                        <span class="ml-1 d-none d-md-inline">Giỏ hàng</span>
+                    </a>
                     <span><i class="fas fa-phone"></i> 1900.1234</span>
                 </div>
             </div>
@@ -146,19 +201,21 @@
         <div class="container">
             <ul class="nav">
                 <li class="nav-item">
-                    <a class="nav-link <?php echo (!isset($_GET['category'])) ? 'active' : ''; ?>" href="/Product">
+                    <a class="nav-link <?php echo (!isset($_GET['category'])) ? 'active' : ''; ?>" 
+                       href="/Product">
                         <i class="fas fa-th-large"></i> Tất cả
                     </a>
                 </li>
                 <?php 
                 $db = (new Database())->getConnection();
-                $stmt = $db->query("SELECT * FROM category ORDER BY id ASC");
+                $stmt = $db->query("SELECT * FROM category ORDER BY name ASC");
                 $categories = $stmt->fetchAll(PDO::FETCH_OBJ);
                 foreach($categories as $cat): 
                     $isActive = (isset($_GET['category']) && $_GET['category'] == $cat->id) ? 'active' : '';
                 ?>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo $isActive; ?>" href="/Product?category=<?php echo $cat->id; ?>">
+                    <a class="nav-link <?php echo $isActive; ?>" 
+                       href="/Product?category=<?php echo $cat->id; ?>">
                         <?php echo htmlspecialchars($cat->name); ?>
                     </a>
                 </li>
@@ -242,3 +299,22 @@
                 </a>
             </div>
         </div>
+
+        <!-- ✅ JavaScript cập nhật badge giỏ hàng khi thêm sản phẩm qua AJAX -->
+        <script>
+        // Function để cập nhật badge giỏ hàng
+        function updateCartBadge(count) {
+            const badge = document.getElementById('cart-badge');
+            if (badge) {
+                badge.textContent = count;
+                if (count > 0) {
+                    badge.classList.remove('d-none');
+                    // Hiệu ứng pulse khi có sản phẩm mới
+                    badge.style.animation = 'none';
+                    setTimeout(() => badge.style.animation = 'pulse 0.3s ease', 10);
+                } else {
+                    badge.classList.add('d-none');
+                }
+            }
+        }
+        </script>
