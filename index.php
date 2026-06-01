@@ -1,24 +1,26 @@
 <?php
 session_start();
 require_once 'app/helpers/SessionHelper.php';
-
 require_once 'app/config/database.php';
 require_once 'app/models/ProductModel.php';
 
-// Lấy URL
 $url = $_GET['url'] ?? '';
 $url = rtrim($url, '/');
 $url = filter_var($url, FILTER_SANITIZE_URL);
 $url = explode('/', $url);
 
-// Nếu URL trống, mặc định là Product controller
-$controllerName = isset($url[0]) && $url[0] != '' 
-    ? ucfirst($url[0]) . 'Controller' 
+// ✅ Thêm Voucher vào danh sách
+$knownControllers = ['Product', 'Category', 'Account', 'Voucher', 'Api'];
+if (isset($url[0]) && !in_array(ucfirst($url[0]), $knownControllers)) {
+    array_shift($url);
+}
+
+$controllerName = isset($url[0]) && $url[0] != ''
+    ? ucfirst($url[0]) . 'Controller'
     : 'ProductController';
 
 $action = isset($url[1]) && $url[1] != '' ? $url[1] : 'index';
 
-// Kiểm tra file controller tồn tại
 $controllerPath = 'app/controllers/' . $controllerName . '.php';
 
 if (!file_exists($controllerPath)) {
@@ -32,6 +34,5 @@ if (!method_exists($controller, $action)) {
     die('Action not found: ' . $action);
 }
 
-// Gọi action với parameters
 call_user_func_array([$controller, $action], array_slice($url, 2));
 ?>

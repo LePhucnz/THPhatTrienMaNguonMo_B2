@@ -193,28 +193,32 @@ function addToCart(productId) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang thêm...';
     }
-    
+
     const formData = new FormData();
     formData.append('product_id', productId);
-    
+
     fetch('/Product/addToCartAjax', {
         method: 'POST',
         body: formData,
         credentials: 'same-origin'
     })
-    .then(response => {
-        if (!response.ok) throw new Error('HTTP error: ' + response.status);
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
+        // Chưa đăng nhập → hỏi chuyển trang login
+        if (!data.success && data.redirect) {
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-cart-plus"></i> Thêm vào giỏ hàng';
+                btn.disabled = false;
+            }
+            if (confirm('⚠️ Bạn cần đăng nhập để thêm vào giỏ hàng!\nChuyển đến trang đăng nhập?')) {
+                window.location.href = data.redirect;
+            }
+            return;
+        }
+
         if (data.success) {
-            // Update cart badge
             updateCartBadge(data.totalItems);
-            
-            // Show success notification
             showNotification('success', data.message);
-            
-            // Reset button
             if (btn) {
                 btn.innerHTML = '<i class="fas fa-check"></i> Đã thêm!';
                 setTimeout(() => {

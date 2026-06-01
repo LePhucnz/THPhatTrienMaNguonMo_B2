@@ -1,5 +1,4 @@
 <?php
-// ✅ TẮT HIỂN THỊ LỖI RA MÀN HÌNH - TRÁNH PHÁ VỠ JSON RESPONSE
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
@@ -20,14 +19,32 @@ class ProductController {
         $this->productModel = new ProductModel($this->db);
     }
 
+    // ✅ Hàm kiểm tra quyền admin - dùng chung
+    private function requireAdmin() {
+        if (!SessionHelper::isLoggedIn()) {
+            header('Location: /Account/login');
+            exit;
+        }
+        if (!SessionHelper::isAdmin()) {
+            http_response_code(403);
+            die('
+                <div style="text-align:center; margin-top:100px; font-family:sans-serif;">
+                    <h2>⛔ Truy cập bị từ chối</h2>
+                    <p>Bạn không có quyền thực hiện chức năng này.</p>
+                    <a href="/Product" style="color:#28a745;">← Quay về trang chủ</a>
+                </div>
+            ');
+        }
+    }
+
     // ==================== CRUD SẢN PHẨM ====================
 
     public function index() {
         $categoryId = $_GET['category'] ?? null;
-        $keyword = $_GET['keyword'] ?? null;
-        $minPrice = $_GET['min_price'] ?? null;
-        $maxPrice = $_GET['max_price'] ?? null;
-        
+        $keyword    = $_GET['keyword'] ?? null;
+        $minPrice   = $_GET['min_price'] ?? null;
+        $maxPrice   = $_GET['max_price'] ?? null;
+
         if ($minPrice !== null || $maxPrice !== null) {
             $products = $this->productModel->getProductsByPriceRange($minPrice, $maxPrice, $categoryId);
         } elseif ($keyword) {
@@ -37,22 +54,21 @@ class ProductController {
         } else {
             $products = $this->productModel->getProducts();
         }
-        
+
         include 'app/views/product/list.php';
     }
 
     public function search() {
-        $keyword = $_GET['keyword'] ?? '';
+        $keyword  = $_GET['keyword'] ?? '';
         $products = $this->productModel->searchProducts($keyword);
         include 'app/views/product/list.php';
     }
 
     public function show($id) {
         $product = $this->productModel->getProductById($id);
-        
         if ($product) {
-            $reviewModel = new ReviewModel($this->db);
-            $reviews = $reviewModel->getReviewsByProductId($id);
+            $reviewModel   = new ReviewModel($this->db);
+            $reviews       = $reviewModel->getReviewsByProductId($id);
             $averageRating = $reviewModel->getAverageRating($id);
             include 'app/views/product/show.php';
         } else {
@@ -61,23 +77,25 @@ class ProductController {
     }
 
     public function add() {
+        $this->requireAdmin(); // ✅ Chỉ admin
         $categories = (new CategoryModel($this->db))->getCategories();
         include 'app/views/product/add.php';
     }
 
     public function save() {
+        $this->requireAdmin(); // ✅ Chỉ admin
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $name = $_POST['name'] ?? '';
+            $name        = $_POST['name'] ?? '';
             $description = $_POST['description'] ?? '';
-            $price = $_POST['price'] ?? '';
+            $price       = $_POST['price'] ?? '';
             $category_id = $_POST['category_id'] ?? null;
-            $image = '';
+            $image       = '';
 
             if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
                 try {
                     $image = $this->uploadImage($_FILES['image']);
                 } catch (Exception $e) {
-                    $errors = ['image' => $e->getMessage()];
+                    $errors     = ['image' => $e->getMessage()];
                     $categories = (new CategoryModel($this->db))->getCategories();
                     include 'app/views/product/add.php';
                     return;
@@ -85,9 +103,9 @@ class ProductController {
             }
 
             $result = $this->productModel->addProduct($name, $description, $price, $category_id, $image);
-            
+
             if (is_array($result)) {
-                $errors = $result;
+                $errors     = $result;
                 $categories = (new CategoryModel($this->db))->getCategories();
                 include 'app/views/product/add.php';
             } else {
@@ -98,7 +116,8 @@ class ProductController {
     }
 
     public function edit($id) {
-        $product = $this->productModel->getProductById($id);
+        $this->requireAdmin(); // ✅ Chỉ admin
+        $product    = $this->productModel->getProductById($id);
         $categories = (new CategoryModel($this->db))->getCategories();
         if ($product) {
             include 'app/views/product/edit.php';
@@ -108,13 +127,14 @@ class ProductController {
     }
 
     public function update() {
+        $this->requireAdmin(); // ✅ Chỉ admin
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id'];
-            $name = $_POST['name'];
+            $id          = $_POST['id'];
+            $name        = $_POST['name'];
             $description = $_POST['description'];
-            $price = $_POST['price'];
+            $price       = $_POST['price'];
             $category_id = $_POST['category_id'];
-            $image = $_POST['existing_image'] ?? '';
+            $image       = $_POST['existing_image'] ?? '';
 
             if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
                 try {
@@ -135,6 +155,7 @@ class ProductController {
     }
 
     public function delete($id) {
+        $this->requireAdmin(); // ✅ Chỉ admin
         $this->productModel->deleteProduct($id);
         header('Location: /Product');
         exit;
@@ -144,161 +165,161 @@ class ProductController {
 
     private function uploadImage($file) {
         $target_dir = "public/uploads/";
-        
         if (!is_dir($target_dir)) {
             mkdir($target_dir, 0777, true);
         }
-
-        $extension = strtolower(pathinfo($file["name"], PATHINFO_EXTENSION));
+        $extension   = strtolower(pathinfo($file["name"], PATHINFO_EXTENSION));
         $newFileName = uniqid('img_', true) . '.' . $extension;
         $target_file = $target_dir . $newFileName;
 
-        $check = getimagesize($file["tmp_name"]);
-        if ($check === false) {
+        if (getimagesize($file["tmp_name"]) === false) {
             throw new Exception("File không phải là hình ảnh.");
         }
-
         if ($file["size"] > 10 * 1024 * 1024) {
             throw new Exception("Hình ảnh có kích thước quá lớn (>10MB).");
         }
-
         if (!in_array($extension, ["jpg", "jpeg", "png", "gif", "webp"])) {
             throw new Exception("Chỉ cho phép các định dạng JPG, JPEG, PNG, GIF và WebP.");
         }
-
         if (!move_uploaded_file($file["tmp_name"], $target_file)) {
             throw new Exception("Có lỗi xảy ra khi tải lên hình ảnh.");
         }
-
         return str_replace('public/', '', $target_file);
     }
 
     // ==================== ĐÁNH GIÁ SẢN PHẨM ====================
 
     public function saveReview() {
+        // Tất cả user đã đăng nhập đều được review
+        if (!SessionHelper::isLoggedIn()) {
+            header('Location: /Account/login');
+            exit;
+        }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $product_id = $_POST['product_id'] ?? null;
-            $rating = $_POST['rating'] ?? 5;
-            $content = $_POST['content'] ?? '';
-            $username = $_POST['username'] ?? 'Khách';
+            $rating     = $_POST['rating'] ?? 5;
+            $content    = $_POST['content'] ?? '';
+            $username   = $_SESSION['username'] ?? 'Khách';
 
             if (!empty($content) && $product_id) {
                 $reviewModel = new ReviewModel($this->db);
                 $reviewModel->addReview($product_id, $username, $rating, $content);
             }
-
             header("Location: /Product/show/" . $product_id);
             exit;
         }
     }
 
-    // ==================== GIỎ HÀNG ====================
+    // ==================== GIỎ HÀNG (tất cả user) ====================
 
     public function cart() {
         SessionHelper::start();
-        $cart = $_SESSION['cart'] ?? [];
-        
+        $cart      = $_SESSION['cart'] ?? [];
         $cartItems = [];
-        $total = 0;
-        
+        $total     = 0;
+
         foreach ($cart as $id => $item) {
             $product = $this->productModel->getProductById($id);
             if ($product) {
-                $item['product'] = $product;
+                $item['product']  = $product;
                 $item['subtotal'] = (float)$product->price * $item['quantity'];
-                $total += $item['subtotal'];
-                $cartItems[] = $item;
+                $total           += $item['subtotal'];
+                $cartItems[]      = $item;
             }
         }
-        
         include 'app/views/product/cart.php';
     }
 
     public function addToCart($id) {
         SessionHelper::start();
-        
+    
+        // Bắt đăng nhập trước
+        if (!SessionHelper::isLoggedIn()) {
+            // Lưu lại trang muốn đến để sau khi đăng nhập redirect về
+            $_SESSION['redirect_after_login'] = '/Product/addToCart/' . $id;
+            header('Location: /Account/login');
+            exit;
+        }
+    
         $product = $this->productModel->getProductById($id);
         if (!$product) {
             echo "Không tìm thấy sản phẩm.";
             return;
         }
-        
+    
         if (!isset($_SESSION['cart'])) {
             $_SESSION['cart'] = [];
         }
-        
+    
         if (isset($_SESSION['cart'][$id])) {
             $_SESSION['cart'][$id]['quantity']++;
         } else {
             $_SESSION['cart'][$id] = [
-                'name' => $product->name,
-                'price' => (float)$product->price,
-                'image' => $product->image,
+                'name'     => $product->name,
+                'price'    => (float)$product->price,
+                'image'    => $product->image,
                 'quantity' => 1
             ];
         }
-        
+    
         header('Location: /Product/cart');
         exit;
     }
 
     public function addToCartAjax() {
-        // ✅ XÓA BUFFER OUTPUT TRƯỚC KHI TRẢ JSON
-        if (ob_get_level()) {
-            ob_clean();
-        }
+        if (ob_get_level()) ob_clean();
         header('Content-Type: application/json');
-        
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        if (session_status() === PHP_SESSION_NONE) session_start();
+    
+        // Bắt đăng nhập
+        if (!SessionHelper::isLoggedIn()) {
+            echo json_encode([
+                'success'  => false,
+                'redirect' => '/Account/login',
+                'message'  => 'Vui lòng đăng nhập để thêm vào giỏ hàng!'
+            ]);
+            return;
         }
-        
+    
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = $_POST['product_id'] ?? null;
-            
             if (!$id || !is_numeric($id)) {
                 echo json_encode(['success' => false, 'message' => 'ID sản phẩm không hợp lệ']);
                 return;
             }
-            
+    
             $product = $this->productModel->getProductById($id);
             if (!$product) {
                 echo json_encode(['success' => false, 'message' => 'Không tìm thấy sản phẩm']);
                 return;
             }
-            
+    
             if (!isset($_SESSION['cart'])) {
                 $_SESSION['cart'] = [];
             }
-            
+    
             if (isset($_SESSION['cart'][$id])) {
                 $_SESSION['cart'][$id]['quantity']++;
             } else {
                 $_SESSION['cart'][$id] = [
-                    'name' => $product->name,
-                    'price' => (float)$product->price,
-                    'image' => $product->image,
+                    'name'     => $product->name,
+                    'price'    => (float)$product->price,
+                    'image'    => $product->image,
                     'quantity' => 1
                 ];
             }
-            
+    
             $totalItems = array_sum(array_column($_SESSION['cart'], 'quantity'));
-            
             echo json_encode([
-                'success' => true, 
-                'message' => '✅ Đã thêm "' . htmlspecialchars($product->name) . '" vào giỏ hàng',
-                'totalItems' => $totalItems,
-                'productName' => $product->name
-            ]);
-        } else {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Method không được hỗ trợ']);
-        }
+                'success'    => true,
+                'message'    => '✅ Đã thêm "' . htmlspecialchars($product->name) . '" vào giỏ hàng',
+                'totalItems' => $totalItems
+            ]); // ✅ Không có dấu phẩy thừa sau phần tử cuối
+        } // ✅ Đóng if POST
     }
 
     public function updateCart() {
         SessionHelper::start();
-        
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quantities'])) {
             foreach ($_POST['quantities'] as $id => $quantity) {
                 $quantity = (int)$quantity;
@@ -309,96 +330,66 @@ class ProductController {
                 }
             }
         }
-        
         header('Location: /Product/cart');
         exit;
     }
 
     public function removeFromCart($id) {
         SessionHelper::start();
-        
         if (isset($_SESSION['cart'][$id])) {
             unset($_SESSION['cart'][$id]);
         }
-        
         header('Location: /Product/cart');
         exit;
     }
 
-    // ==================== VOUCHER/DISCOUNT ====================
+    // ==================== VOUCHER ====================
 
-    /**
-     * ✅ Áp dụng mã voucher qua AJAX - KHÔNG submit form checkout
-     * Trả về JSON response - ĐÃ SỬA LỖI JSON
-     */
     public function applyVoucher() {
-        // ✅ XÓA BUFFER OUTPUT TRƯỚC KHI TRẢ JSON
-        if (ob_get_level()) {
-            ob_clean();
-        }
-        
-        // ✅ START SESSION AN TOÀN
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        
-        // ✅ SET HEADER JSON TRƯỚC BẤT KỲ OUTPUT NÀO
+        if (ob_get_level()) ob_clean();
+        if (session_status() === PHP_SESSION_NONE) session_start();
         header('Content-Type: application/json');
-        
+
         try {
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 echo json_encode(['success' => false, 'message' => 'Method không được hỗ trợ']);
                 return;
             }
-            
-            $code = strtoupper(trim($_POST['code'] ?? ''));
+            $code         = strtoupper(trim($_POST['code'] ?? ''));
             $cartSubtotal = $_POST['subtotal'] ?? 0;
-            
+
             if (empty($code)) {
                 echo json_encode(['success' => false, 'message' => 'Vui lòng nhập mã voucher']);
                 return;
             }
-            
-            // ✅ ĐẢM BẢO VoucherModel ĐÃ ĐƯỢC LOAD
-            if (!class_exists('VoucherModel')) {
-                require_once 'app/models/VoucherModel.php';
-            }
-            
+
             $voucherModel = new VoucherModel($this->db);
-            $voucher = $voucherModel->getVoucherByCode($code);
-            
+            $voucher      = $voucherModel->getVoucherByCode($code);
+
             if (!$voucher) {
                 echo json_encode(['success' => false, 'message' => 'Mã voucher không tồn tại']);
                 return;
             }
-            
+
             $validation = $voucherModel->validateVoucher($voucher, $cartSubtotal);
-            
             if (!$validation['valid']) {
                 echo json_encode(['success' => false, 'message' => $validation['message']]);
                 return;
             }
-            
-            // Lưu voucher vào session
+
             $_SESSION['applied_voucher'] = [
-                'id' => $voucher->id,
-                'code' => $voucher->code,
-                'type' => $voucher->type,
-                'value' => (float)$voucher->value,
+                'id'           => $voucher->id,
+                'code'         => $voucher->code,
+                'type'         => $voucher->type,
+                'value'        => (float)$voucher->value,
                 'max_discount' => $voucher->max_discount ? (float)$voucher->max_discount : null
             ];
-            
+
             echo json_encode(['success' => true, 'message' => '✅ Áp dụng voucher thành công']);
-            
+
         } catch (Exception $e) {
-            // ✅ LOG LỖI RA FILE THAY VÌ ECHO RA MÀN HÌNH
-            error_log("Voucher Error [" . date('Y-m-d H:i:s') . "]: " . $e->getMessage());
-            
-            // Trả về JSON an toàn
-            echo json_encode([
-                'success' => false, 
-                'message' => 'Lỗi server. Vui lòng thử lại sau.'
-            ]);
+            error_log("Voucher Error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Lỗi server. Vui lòng thử lại sau.']);
         }
     }
 
@@ -413,43 +404,44 @@ class ProductController {
 
     public function checkout() {
         SessionHelper::start();
-        
         if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
             header('Location: /Product');
             exit;
         }
-        
-        // Tạo order code và lưu vào session
+
         $orderCode = 'DH' . date('YmdHis') . strtoupper(substr(uniqid(), -6));
         $_SESSION['current_order_code'] = $orderCode;
+
+        $userInfo = null;
+        if (SessionHelper::isLoggedIn()) {
+            require_once 'app/models/AccountModel.php';
+            $accModel = new AccountModel($this->db);
+            $userInfo = $accModel->getAccountById($_SESSION['user_id']);
+        }
         
-        // Tính tổng tiền
-        $cart = $_SESSION['cart'];
-        $cartItems = [];
-        $subtotal = 0;
+        $cart       = $_SESSION['cart'];
+        $cartItems  = [];
+        $subtotal   = 0;
         $shippingFee = 30000;
-        
+
         foreach ($cart as $id => $item) {
             $product = $this->productModel->getProductById($id);
             if ($product) {
-                $itemTotal = (float)$product->price * $item['quantity'];
-                $subtotal += $itemTotal;
-                
+                $itemTotal  = (float)$product->price * $item['quantity'];
+                $subtotal  += $itemTotal;
                 $cartItems[] = [
-                    'product' => $product,
+                    'product'  => $product,
                     'quantity' => $item['quantity'],
-                    'price' => (float)$product->price,
+                    'price'    => (float)$product->price,
                     'subtotal' => $itemTotal
                 ];
             }
         }
-        
-        $tax = $subtotal * 0.10;
-        
-        // Xử lý voucher
+
+        $tax            = $subtotal * 0.10;
         $discountAmount = 0;
         $appliedVoucher = $_SESSION['applied_voucher'] ?? null;
-        
+
         if ($appliedVoucher) {
             if ($appliedVoucher['type'] === 'percent') {
                 $discountAmount = $subtotal * ($appliedVoucher['value'] / 100);
@@ -463,72 +455,63 @@ class ProductController {
             }
             $discountAmount = min($discountAmount, $subtotal + $shippingFee);
         }
-        
-        $finalTotal = ($subtotal + $shippingFee + $tax) - $discountAmount;
-        
-        // Lấy danh sách voucher để hiển thị
+
+        $finalTotal   = ($subtotal + $shippingFee + $tax) - $discountAmount;
         $voucherModel = new VoucherModel($this->db);
-        $vouchers = $voucherModel->getActiveVouchers();
-        
+        $vouchers     = $voucherModel->getActiveVouchers();
         $voucherError = $_SESSION['voucher_error'] ?? '';
         unset($_SESSION['voucher_error']);
-        
+
         include 'app/views/product/checkout.php';
     }
 
     public function processCheckout() {
         SessionHelper::start();
-        
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: /Product');
             exit;
         }
-        
-        $fullname = $_POST['fullname'] ?? '';
-        $phone = $_POST['phone'] ?? '';
-        $email = $_POST['email'] ?? '';
-        $address = $_POST['address'] ?? '';
-        $city = $_POST['city'] ?? '';
-        $district = $_POST['district'] ?? '';
-        $notes = $_POST['notes'] ?? '';
+
+        $fullname      = $_POST['fullname'] ?? '';
+        $phone         = $_POST['phone'] ?? '';
+        $email         = $_POST['email'] ?? '';
+        $address       = $_POST['address'] ?? '';
+        $city          = $_POST['city'] ?? '';
+        $district      = $_POST['district'] ?? '';
+        $notes         = $_POST['notes'] ?? '';
         $paymentMethod = $_POST['payment_method'] ?? 'cod';
-        
-        // Lấy order code an toàn
-        $orderCode = $_POST['order_code'] ?? $_SESSION['current_order_code'] ?? null;
+        $orderCode     = $_POST['order_code'] ?? $_SESSION['current_order_code'] ?? null;
+
         if (empty($orderCode)) {
             $orderCode = 'DH' . date('YmdHis') . strtoupper(substr(uniqid(), -6));
         }
         unset($_SESSION['current_order_code']);
-        
+
         if (empty($fullname) || empty($phone) || empty($address)) {
             echo "Vui lòng điền đầy đủ thông tin.";
             return;
         }
-        
         if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
             echo "Giỏ hàng trống.";
             return;
         }
-        
-        // Tính toán tổng tiền server-side
-        $cart = $_SESSION['cart'];
-        $subtotal = 0;
+
+        $cart        = $_SESSION['cart'];
+        $subtotal    = 0;
         $shippingFee = 30000;
-        
+
         foreach ($cart as $id => $item) {
             $product = $this->productModel->getProductById($id);
             if ($product) {
                 $subtotal += (float)$product->price * $item['quantity'];
             }
         }
-        
-        $tax = $subtotal * 0.10;
-        
-        // Xử lý voucher
+
+        $tax            = $subtotal * 0.10;
         $discountAmount = 0;
-        $voucherId = null;
-        $voucherCode = null;
-        
+        $voucherId      = null;
+        $voucherCode    = null;
+
         if (isset($_SESSION['applied_voucher'])) {
             $v = $_SESSION['applied_voucher'];
             if ($v['type'] === 'percent') {
@@ -542,16 +525,14 @@ class ProductController {
                 $discountAmount = $shippingFee;
             }
             $discountAmount = min($discountAmount, $subtotal + $shippingFee);
-            $voucherId = $v['id'];
-            $voucherCode = $v['code'];
+            $voucherId      = $v['id'];
+            $voucherCode    = $v['code'];
         }
-        
+
         $finalTotal = ($subtotal + $shippingFee + $tax) - $discountAmount;
-        
         $this->db->beginTransaction();
-        
+
         try {
-            // Insert order
             $query = "INSERT INTO orders 
                       (name, phone, email, address, city, district, notes, payment_method, order_code, 
                        subtotal, shipping_fee, tax, voucher_id, voucher_code, discount_amount, final_total, status, created_at) 
@@ -559,6 +540,7 @@ class ProductController {
                       (:name, :phone, :email, :address, :city, :district, :notes, :payment_method, :order_code,
                        :subtotal, :shipping_fee, :tax, :voucher_id, :voucher_code, :discount_amount, :final_total, :status, NOW())";
             $stmt = $this->db->prepare($query);
+            $status = ($paymentMethod === 'cod') ? 'pending' : 'waiting_payment';
             $stmt->bindParam(':name', $fullname);
             $stmt->bindParam(':phone', $phone);
             $stmt->bindParam(':email', $email);
@@ -575,19 +557,17 @@ class ProductController {
             $stmt->bindParam(':voucher_code', $voucherCode);
             $stmt->bindParam(':discount_amount', $discountAmount);
             $stmt->bindParam(':final_total', $finalTotal);
-            $status = ($paymentMethod === 'cod') ? 'pending' : 'waiting_payment';
             $stmt->bindParam(':status', $status);
             $stmt->execute();
-            
+
             $orderId = $this->db->lastInsertId();
-            
-            // Insert order details
+
             foreach ($_SESSION['cart'] as $productId => $item) {
                 $product = $this->productModel->getProductById($productId);
                 if ($product) {
                     $query = "INSERT INTO order_details (order_id, product_id, quantity, price) 
                               VALUES (:order_id, :product_id, :quantity, :price)";
-                    $stmt = $this->db->prepare($query);
+                    $stmt  = $this->db->prepare($query);
                     $stmt->bindParam(':order_id', $orderId, PDO::PARAM_INT);
                     $stmt->bindParam(':product_id', $productId, PDO::PARAM_INT);
                     $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
@@ -595,22 +575,19 @@ class ProductController {
                     $stmt->execute();
                 }
             }
-            
-            // Clear sessions
+
             unset($_SESSION['cart']);
             unset($_SESSION['applied_voucher']);
-            
-            // Increment voucher usage
+
             if ($voucherId) {
                 $voucherModel = new VoucherModel($this->db);
                 $voucherModel->incrementUsage($voucherId);
             }
-            
+
             $this->db->commit();
-            
             header('Location: /Product/orderConfirmation/' . $orderId);
             exit;
-            
+
         } catch (Exception $e) {
             $this->db->rollBack();
             error_log("Order Error: " . $e->getMessage());
@@ -622,14 +599,12 @@ class ProductController {
         $order = null;
         if ($orderId && is_numeric($orderId)) {
             $query = "SELECT * FROM orders WHERE id = :id";
-            $stmt = $this->db->prepare($query);
+            $stmt  = $this->db->prepare($query);
             $stmt->bindParam(':id', $orderId, PDO::PARAM_INT);
             $stmt->execute();
             $order = $stmt->fetch(PDO::FETCH_OBJ);
         }
-        
         include 'app/views/product/orderConfirmation.php';
     }
-
 }
 ?>

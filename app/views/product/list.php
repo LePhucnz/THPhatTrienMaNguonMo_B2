@@ -1,4 +1,7 @@
-<?php include 'app/views/shares/header.php'; ?>
+<?php 
+require_once 'app/helpers/SessionHelper.php';
+include 'app/views/shares/header.php'; 
+?>
 
 <!-- Filter Section -->
 <div class="card mb-4">
@@ -7,7 +10,6 @@
     </div>
     <div class="card-body">
         <form method="GET" action="/Product" class="row g-3 align-items-end">
-            <!-- Lọc theo danh mục -->
             <div class="col-md-3">
                 <label class="form-label">Danh mục</label>
                 <select name="category" class="form-select">
@@ -24,31 +26,23 @@
                     <?php endforeach; ?>
                 </select>
             </div>
-            
-            <!-- Lọc theo giá min -->
             <div class="col-md-2">
                 <label class="form-label">Giá từ</label>
                 <input type="number" name="min_price" class="form-control" 
                        placeholder="0" min="0" step="1000"
                        value="<?php echo isset($_GET['min_price']) ? htmlspecialchars($_GET['min_price']) : ''; ?>">
             </div>
-            
-            <!-- Lọc theo giá max -->
             <div class="col-md-2">
                 <label class="form-label">Đến</label>
                 <input type="number" name="max_price" class="form-control" 
                        placeholder="100.000.000" min="0" step="1000"
                        value="<?php echo isset($_GET['max_price']) ? htmlspecialchars($_GET['max_price']) : ''; ?>">
             </div>
-            
-            <!-- Nút lọc -->
             <div class="col-md-3">
                 <button type="submit" class="btn btn-primary w-100">
                     <i class="fas fa-search"></i> Lọc
                 </button>
             </div>
-            
-            <!-- Nút xóa lọc -->
             <div class="col-md-2">
                 <a href="/Product" class="btn btn-outline-secondary w-100">
                     <i class="fas fa-times"></i> Reset
@@ -58,7 +52,7 @@
     </div>
 </div>
 
-<!-- Hiển thị thông báo đang lọc -->
+<!-- Thông báo đang lọc -->
 <?php 
 $hasFilter = isset($_GET['category']) || isset($_GET['min_price']) || isset($_GET['max_price']) || isset($_GET['keyword']);
 if ($hasFilter): 
@@ -71,17 +65,15 @@ if ($hasFilter):
         <?php elseif(isset($_GET['category'])): ?>
             Danh mục: <strong><?php 
                 $catId = (int)$_GET['category'];
-                $db = (new Database())->getConnection();
-                $cat = $db->prepare("SELECT name FROM category WHERE id = :id");
-                $cat->bindParam(':id', $catId, PDO::PARAM_INT);
-                $cat->execute();
-                $c = $cat->fetch(PDO::FETCH_OBJ);
+                $db2 = (new Database())->getConnection();
+                $catStmt = $db2->prepare("SELECT name FROM category WHERE id = :id");
+                $catStmt->bindParam(':id', $catId, PDO::PARAM_INT);
+                $catStmt->execute();
+                $c = $catStmt->fetch(PDO::FETCH_OBJ);
                 echo $c ? htmlspecialchars($c->name) : 'Tất cả';
             ?></strong>
         <?php endif; ?>
-        
         <?php if(isset($_GET['min_price']) || isset($_GET['max_price'])): ?>
-            <?php if(isset($_GET['keyword']) || isset($_GET['category'])) echo ' - '; ?>
             Giá: 
             <strong><?php echo !empty($_GET['min_price']) ? number_format((float)$_GET['min_price'], 0, ',', '.') : '0'; ?></strong>
             - 
@@ -99,7 +91,6 @@ if ($hasFilter):
 <div class="alert alert-warning text-center py-5">
     <i class="fas fa-exclamation-circle fa-3x mb-3 text-muted"></i>
     <h4>Không tìm thấy sản phẩm nào</h4>
-    <p class="text-muted">Hãy thử điều chỉnh bộ lọc hoặc tìm kiếm với từ khóa khác.</p>
     <a href="/Product" class="btn btn-primary">Xem tất cả sản phẩm</a>
 </div>
 <?php else: ?>
@@ -144,15 +135,19 @@ if ($hasFilter):
                             title="Thêm vào giỏ hàng">
                         <i class="fas fa-cart-plus"></i> Thêm vào giỏ
                     </button>
-                    <a href="/Product/edit/<?php echo $product->id; ?>" 
-                       class="btn btn-warning btn-sm flex-grow-1" title="Sửa">
-                        <i class="fas fa-edit"></i>
-                    </a>
-                    <a href="/Product/delete/<?php echo $product->id; ?>" 
-                       class="btn btn-danger btn-sm flex-grow-1" 
-                       onclick="return confirm('Bạn có chắc muốn xóa?');" title="Xóa">
-                        <i class="fas fa-trash"></i>
-                    </a>
+
+                    <?php if (SessionHelper::isAdmin()): ?>
+                        <a href="/Product/edit/<?php echo $product->id; ?>" 
+                           class="btn btn-warning btn-sm flex-grow-1" title="Sửa">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="/Product/delete/<?php echo $product->id; ?>" 
+                           class="btn btn-danger btn-sm flex-grow-1" 
+                           onclick="return confirm('Bạn có chắc muốn xóa?');" title="Xóa">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    <?php endif; ?>
+
                     <a href="/Product/show/<?php echo $product->id; ?>" 
                        class="btn btn-primary btn-sm flex-grow-1" title="Xem chi tiết">
                         <i class="fas fa-eye"></i>
@@ -164,19 +159,14 @@ if ($hasFilter):
     <?php endforeach; ?>
 </div>
 
-<?php if(count($products) > 0): ?>
 <div class="text-center mt-4">
-    <small class="text-muted">
-        Hiển thị <?php echo count($products); ?> sản phẩm
-    </small>
+    <small class="text-muted">Hiển thị <?php echo count($products); ?> sản phẩm</small>
 </div>
-<?php endif; ?>
 
 <?php endif; ?>
 
-<!-- JavaScript for AJAX Add to Cart -->
+<!-- JavaScript -->
 <script>
-// Function to add product to cart via AJAX
 function addToCart(productId) {
     const formData = new FormData();
     formData.append('product_id', productId);
@@ -187,11 +177,16 @@ function addToCart(productId) {
     })
     .then(response => response.json())
     .then(data => {
+        // Chưa đăng nhập → hỏi chuyển trang login
+        if (!data.success && data.redirect) {
+            if (confirm('⚠️ Bạn cần đăng nhập để thêm vào giỏ hàng!\nChuyển đến trang đăng nhập?')) {
+                window.location.href = data.redirect;
+            }
+            return;
+        }
+
         if (data.success) {
-            // Update cart badge
             updateCartBadge(data.totalItems);
-            
-            // Show success notification
             showNotification('success', data.message);
         } else {
             showNotification('error', data.message);
@@ -203,7 +198,6 @@ function addToCart(productId) {
     });
 }
 
-// Function to update cart badge
 function updateCartBadge(count) {
     const badge = document.getElementById('cart-badge');
     if (badge) {
@@ -216,9 +210,7 @@ function updateCartBadge(count) {
     }
 }
 
-// Function to show notification
 function showNotification(type, message) {
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
     notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
@@ -226,10 +218,7 @@ function showNotification(type, message) {
         ${message}
         <button type="button" class="close" data-dismiss="alert">&times;</button>
     `;
-    
     document.body.appendChild(notification);
-    
-    // Auto dismiss after 3 seconds
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 300);

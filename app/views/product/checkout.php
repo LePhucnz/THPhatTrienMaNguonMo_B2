@@ -39,20 +39,24 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Họ và tên <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="fullname" required>
+                                <input type="text" class="form-control" name="fullname" required
+                                    value="<?= htmlspecialchars($userInfo->fullname ?? '') ?>">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
-                                <input type="tel" class="form-control" name="phone" required>
+                                <input type="tel" class="form-control" name="phone" required
+                                    value="<?= htmlspecialchars($userInfo->phone ?? '') ?>">
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Email</label>
-                            <input type="email" class="form-control" name="email">
+                            <input type="email" class="form-control" name="email"
+                                value="<?= htmlspecialchars($userInfo->email ?? '') ?>">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Địa chỉ <span class="text-danger">*</span></label>
-                            <textarea class="form-control" name="address" rows="3" required></textarea>
+                            <textarea class="form-control" name="address" rows="3" required
+                            ><?= htmlspecialchars($userInfo->address ?? '') ?></textarea>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
