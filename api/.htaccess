@@ -1,0 +1,10 @@
+# Enable Rewrite Engine
+RewriteEngine On
+
+# Allow direct access to files and directories
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Route all requests to router.php
+RewriteRule ^(.*)$ router.php [QSA,L]

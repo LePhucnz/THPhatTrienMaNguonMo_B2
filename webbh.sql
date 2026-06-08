@@ -1,3 +1,5 @@
+CREATE DATABASE IF NOT EXISTS my_store;
+USE my_store;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- 1. Xóa bảng cũ nếu có (đúng thứ tự)

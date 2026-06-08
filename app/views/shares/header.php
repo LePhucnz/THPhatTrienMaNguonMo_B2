@@ -8,12 +8,110 @@ require_once 'app/helpers/SessionHelper.php';
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý sản phẩm</title>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
+        .product-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.product-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    padding-top: 75%; /* 4:3 Aspect Ratio */
+}
+
+.product-image-wrapper img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.product-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.4;
+    height: 42px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    margin-bottom: 0.5rem;
+}
+
+.product-description {
+    height: 40px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 0.85rem;
+}
+
+.card-footer {
+    padding: 0.75rem;
+}
+
+.btn-group .btn {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+}
+
+/* Loading Animation */
+#loading {
+    padding: 50px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .product-title {
+        font-size: 0.9rem;
+        height: 38px;
+    }
+    
+    .product-description {
+        height: 35px;
+        font-size: 0.8rem;
+    }
+    
+    .btn-group .btn {
+        font-size: 0.8rem;
+        padding: 0.35rem 0.5rem;
+    }
+}
+
+/* Badge styling */
+.badge-info {
+    background-color: #17a2b8 !important;
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.5rem;
+}
+
+/* Price styling */
+.text-danger {
+    font-size: 1.1rem;
+}
         .header-top { background: #28a745; padding: 10px 0; }
         .search-box { max-width: 600px; margin: 0 auto; }
         .search-box input { border-radius: 25px 0 0 25px; border: none; padding: 10px 20px; }

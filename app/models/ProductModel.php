@@ -61,42 +61,54 @@ class ProductModel {
         return $stmt->fetch(PDO::FETCH_OBJ);
     }
 
-    public function addProduct($name, $description, $price, $category_id, $image) {
+    public function addProduct($name, $description, $price, $category_id, $image = '') {
         $errors = [];
-        if(empty($name)) $errors['name'] = 'Tên sản phẩm không được để trống';
-        if(empty($description)) $errors['description'] = 'Mô tả không được để trống';
-        if(!is_numeric($price) || $price < 0) $errors['price'] = 'Giá sản phẩm không hợp lệ';
-        if(count($errors) > 0) return $errors;
-
-        $query = "INSERT INTO " . $this->table_name . " 
-                  (name, description, price, category_id, image) 
+        if (empty($name))                       $errors['name']        = 'Tên sản phẩm không được để trống';
+        if (empty($description))                $errors['description'] = 'Mô tả không được để trống';
+        if (!is_numeric($price) || $price < 0) $errors['price']       = 'Giá sản phẩm không hợp lệ';
+        if (count($errors) > 0) return $errors;
+    
+        $query = "INSERT INTO " . $this->table_name . "
+                  (name, description, price, category_id, image)
                   VALUES(:name, :description, :price, :category_id, :image)";
         $stmt = $this->conn->prepare($query);
-
-        $stmt->bindParam(':name', htmlspecialchars(strip_tags($name)));
-        $stmt->bindParam(':description', htmlspecialchars(strip_tags($description)));
-        $stmt->bindParam(':price', htmlspecialchars(strip_tags($price)), PDO::PARAM_STR);
+    
+        // ✅ Lưu vào biến trước — tránh Notice
+        $name        = htmlspecialchars(strip_tags($name));
+        $description = htmlspecialchars(strip_tags($description));
+        $price       = htmlspecialchars(strip_tags($price));
+        $image       = htmlspecialchars(strip_tags($image));
+    
+        $stmt->bindParam(':name',        $name);
+        $stmt->bindParam(':description', $description);
+        $stmt->bindParam(':price',       $price,       PDO::PARAM_STR);
         $stmt->bindParam(':category_id', $category_id, PDO::PARAM_INT);
-        $stmt->bindParam(':image', htmlspecialchars(strip_tags($image)));
-
-        return $stmt->execute();
+        $stmt->bindParam(':image',       $image);
+    
+        return $stmt->execute() ? true : false;
     }
 
-    public function updateProduct($id, $name, $description, $price, $category_id, $image) {
-        $query = "UPDATE " . $this->table_name . " 
-                  SET name = :name, description = :description, price = :price, 
-                      category_id = :category_id, image = :image 
-                  WHERE id = :id";
+    public function updateProduct($id, $name, $description, $price, $category_id, $image = '') {
+        $query = "UPDATE " . $this->table_name . "
+                  SET name=:name, description=:description, price=:price,
+                      category_id=:category_id, image=:image
+                  WHERE id=:id";
         $stmt = $this->conn->prepare($query);
-
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-        $stmt->bindParam(':name', htmlspecialchars(strip_tags($name)));
-        $stmt->bindParam(':description', htmlspecialchars(strip_tags($description)));
-        $stmt->bindParam(':price', htmlspecialchars(strip_tags($price)), PDO::PARAM_STR);
+    
+        // ✅ Lưu vào biến trước — tránh Notice
+        $name        = htmlspecialchars(strip_tags($name));
+        $description = htmlspecialchars(strip_tags($description));
+        $price       = htmlspecialchars(strip_tags($price));
+        $image       = htmlspecialchars(strip_tags($image));
+    
+        $stmt->bindParam(':id',          $id,          PDO::PARAM_INT);
+        $stmt->bindParam(':name',        $name);
+        $stmt->bindParam(':description', $description);
+        $stmt->bindParam(':price',       $price,       PDO::PARAM_STR);
         $stmt->bindParam(':category_id', $category_id, PDO::PARAM_INT);
-        $stmt->bindParam(':image', htmlspecialchars(strip_tags($image)));
-
-        return $stmt->execute();
+        $stmt->bindParam(':image',       $image);
+    
+        return $stmt->execute() ? true : false;
     }
 
     public function deleteProduct($id) {
