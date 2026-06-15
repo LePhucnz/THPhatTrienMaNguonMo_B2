@@ -1,24 +1,36 @@
 $(document).ready(function() {
+<<<<<<< HEAD
     const API_BASE = 'http://localhost/THPHATTRIENMANGUONMO_B2/api';
 
+=======
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
     // Xử lý click vào endpoint trong sidebar
     $('.api-list a').click(function(e) {
         e.preventDefault();
         
         const method = $(this).data('method');
         const url = $(this).data('url');
+<<<<<<< HEAD
         const body = $(this).data('body');
         const text = $(this).text();
+=======
+        const text = $(this).text(); // ✅ Lấy text của link để phân biệt action
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
         
         $('#method').val(method);
         $('#url').val(url);
         
+<<<<<<< HEAD
         // Nếu có data-body attribute thì dùng, ngược lại gọi hàm updateRequestBody
         if (body) {
             $('#requestBody').val(JSON.stringify(body, null, 2));
         } else {
             updateRequestBody(url, method, text);
         }
+=======
+        // ✅ Truyền thêm text vào hàm để phân biệt action
+        updateRequestBody(url, method, text);
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
         
         // Hiển thị/ẩn body section
         if (method === 'POST' || method === 'PUT') {
@@ -30,24 +42,39 @@ $(document).ready(function() {
 
     // Hàm cập nhật request body mẫu
     function updateRequestBody(url, method, text) {
+<<<<<<< HEAD
         let sampleBody = {};
         
         // ===== PRODUCT =====
         if (url.includes('/api/product') && method === 'POST') {
             sampleBody = {
+=======
+        let sampleBody = '';
+        
+        // ===== PRODUCT =====
+        if (url.includes('/api/product') && method === 'POST') {
+            sampleBody = JSON.stringify({
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
                 name: "Sản phẩm mới",
                 description: "Mô tả sản phẩm",
                 price: 100000,
                 category_id: 1,
                 image: "product.jpg"
+<<<<<<< HEAD
             };
         } else if (url.includes('/api/product') && method === 'PUT') {
             sampleBody = {
+=======
+            }, null, 2);
+        } else if (url.includes('/api/product') && method === 'PUT') {
+            sampleBody = JSON.stringify({
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
                 name: "Sản phẩm cập nhật",
                 description: "Mô tả mới",
                 price: 150000,
                 category_id: 1,
                 image: "product-updated.jpg"
+<<<<<<< HEAD
             };
         }
         // ===== CATEGORY =====
@@ -128,6 +155,77 @@ $(document).ready(function() {
         
         if (Object.keys(sampleBody).length > 0) {
             $('#requestBody').val(JSON.stringify(sampleBody, null, 2));
+=======
+            }, null, 2);
+        }
+        // ===== CATEGORY =====
+        else if (url.includes('/api/category') && method === 'POST') {
+            sampleBody = JSON.stringify({
+                name: "Danh mục mới",
+                description: "Mô tả danh mục"
+            }, null, 2);
+        } else if (url.includes('/api/category') && method === 'PUT') {
+            sampleBody = JSON.stringify({
+                name: "Danh mục cập nhật",
+                description: "Mô tả danh mục mới"
+            }, null, 2);
+        }
+        // ===== ACCOUNT =====
+        else if (url.includes('/api/account') && method === 'POST') {
+            sampleBody = JSON.stringify({
+                username: "newuser",
+                fullname: "Nguyễn Văn A",
+                email: "newuser@example.com",
+                password: "password123",
+                role: "user",
+                security_question: "Tên thú cưng?",
+                security_answer: "Mèo"
+            }, null, 2);
+        }
+        // ✅ Phân biệt các action PUT của Account bằng text của link
+        else if (url.includes('/api/account') && method === 'PUT' && text.includes('Change Password')) {
+            sampleBody = JSON.stringify({
+                action: "change_password",
+                new_password: "newpassword123"
+            }, null, 2);
+        } else if (url.includes('/api/account') && method === 'PUT' && text.includes('Toggle Lock')) {
+            sampleBody = JSON.stringify({
+                action: "toggle_lock"
+            }, null, 2);
+        } else if (url.includes('/api/account') && method === 'PUT' && text.includes('Update Email')) {
+            sampleBody = JSON.stringify({
+                action: "update_email",
+                email: "newemail@example.com"
+            }, null, 2);
+        } else if (url.includes('/api/account') && method === 'PUT' && text.includes('Update Avatar')) {
+            sampleBody = JSON.stringify({
+                action: "update_avatar",
+                avatar: "avatar.jpg"
+            }, null, 2);
+        } else if (url.includes('/api/account') && method === 'PUT' && text.includes('Update Role')) {
+            sampleBody = JSON.stringify({
+                action: "update_role",
+                role: "admin"
+            }, null, 2);
+        } else if (url.includes('/api/account') && method === 'PUT' && text.includes('Security Question')) {
+            sampleBody = JSON.stringify({
+                action: "save_security_question",
+                security_question: "Tên thú cưng của bạn?",
+                security_answer: "Mèo"
+            }, null, 2);
+        } else if (url.includes('/api/account') && method === 'PUT') {
+            // Mặc định: Update Profile
+            sampleBody = JSON.stringify({
+                action: "update_profile",
+                fullname: "Nguyễn Văn A",
+                phone: "0123456789",
+                address: "Hà Nội"
+            }, null, 2);
+        }
+        
+        if (sampleBody) {
+            $('#requestBody').val(sampleBody);
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
         }
     }
 
@@ -146,15 +244,22 @@ $(document).ready(function() {
         const method = $('#method').val();
         const url = $('#url').val();
         const body = $('#requestBody').val();
+<<<<<<< HEAD
         const token = localStorage.getItem('api_token') || '';
         
         // Reset response
         $('#statusBadge').removeClass('success error').text('Status: --').css('background-color', '#e0e0e0');
+=======
+        
+        // Reset response
+        $('#statusBadge').removeClass('success error').text('Status: --');
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
         $('#timeBadge').text('Time: -- ms');
         $('#responseBody').text('// Đang gửi request...');
         
         const startTime = Date.now();
         
+<<<<<<< HEAD
         // Cấu hình headers
         const headers = {
             'Content-Type': 'application/json'
@@ -171,12 +276,21 @@ $(document).ready(function() {
             contentType: 'application/json',
             dataType: 'json',
             headers: headers,
+=======
+        // Cấu hình request
+        const ajaxConfig = {
+            url: url,
+            method: method,
+            contentType: 'application/json',
+            dataType: 'json',
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
             success: function(data, textStatus, xhr) {
                 const endTime = Date.now();
                 const duration = endTime - startTime;
                 
                 $('#statusBadge')
                     .addClass('success')
+<<<<<<< HEAD
                     .css('background-color', '#4caf50')
                     .text('Status: ' + xhr.status + ' ' + xhr.statusText);
                 $('#timeBadge').text('Time: ' + duration + ' ms');
@@ -187,6 +301,11 @@ $(document).ready(function() {
                     localStorage.setItem('api_token', data.token);
                     alert('✅ Token đã được tự động lưu!');
                 }
+=======
+                    .text('Status: ' + xhr.status + ' ' + xhr.statusText);
+                $('#timeBadge').text('Time: ' + duration + ' ms');
+                $('#responseBody').html(syntaxHighlight(JSON.stringify(data, null, 2)));
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
             },
             error: function(xhr, textStatus, errorThrown) {
                 const endTime = Date.now();
@@ -194,7 +313,10 @@ $(document).ready(function() {
                 
                 $('#statusBadge')
                     .addClass('error')
+<<<<<<< HEAD
                     .css('background-color', '#f44336')
+=======
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
                     .text('Status: ' + xhr.status + ' ' + xhr.statusText);
                 $('#timeBadge').text('Time: ' + duration + ' ms');
                 

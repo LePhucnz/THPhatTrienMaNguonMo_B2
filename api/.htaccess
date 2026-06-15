@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 RewriteEngine On
 
 # Cho phép truy cập file tĩnh
@@ -12,3 +13,15 @@ RewriteRule ^$ index.php [L]
 
 # Rewrite tất cả request khác → router.php
 RewriteRule ^(.+)$ router.php [QSA,L]
+=======
+# Enable Rewrite Engine
+RewriteEngine On
+
+# Allow direct access to files and directories
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Route all requests to router.php
+RewriteRule ^(.*)$ router.php [QSA,L]
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6

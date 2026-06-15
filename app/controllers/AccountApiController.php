@@ -1,8 +1,13 @@
 <?php
+<<<<<<< HEAD
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/AccountModel.php';
 require_once __DIR__ . '/../helpers/JwtHelper.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+=======
+require_once(__DIR__ . '/../config/database.php');
+require_once(__DIR__ . '/../models/AccountModel.php');
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
 
 class AccountApiController {
     private $accountModel;
@@ -13,6 +18,7 @@ class AccountApiController {
         $this->accountModel = new AccountModel($this->db);
     }
 
+<<<<<<< HEAD
     // POST /api/account/register
     public function register() {
         header('Content-Type: application/json');
@@ -41,12 +47,60 @@ class AccountApiController {
         if ($result === true) {
             http_response_code(201);
             echo json_encode(['message' => 'Đăng ký thành công']);
+=======
+    // GET /api/account - Lấy danh sách tài khoản
+    public function index() {
+        header('Content-Type: application/json');
+        $accounts = $this->accountModel->getAllAccounts();
+        echo json_encode($accounts);
+    }
+
+    // GET /api/account/{id} - Lấy tài khoản theo ID
+    public function show($id) {
+        header('Content-Type: application/json');
+        $account = $this->accountModel->getAccountById($id);
+        if ($account) {
+            echo json_encode($account);
+        } else {
+            http_response_code(404);
+            echo json_encode(['message' => 'Account not found']);
+        }
+    }
+
+    // POST /api/account - Tạo tài khoản mới (Register)
+    public function store() {
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        $username       = $data['username']       ?? '';
+        $fullname       = $data['fullname']       ?? '';
+        $email          = $data['email']          ?? '';
+        $password       = $data['password']       ?? '';
+        $role           = $data['role']           ?? 'user';
+        $securityQuestion = $data['security_question'] ?? '';
+        $securityAnswer   = $data['security_answer']   ?? '';
+
+        $result = $this->accountModel->save(
+            $username, 
+            $fullname, 
+            $email, 
+            $password, 
+            $role, 
+            $securityQuestion, 
+            $securityAnswer
+        );
+
+        if ($result === true) {
+            http_response_code(201);
+            echo json_encode(['message' => 'Account created successfully']);
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
         } else {
             http_response_code(400);
             echo json_encode(['errors' => $result]);
         }
     }
 
+<<<<<<< HEAD
     // POST /api/account/login
     public function login() {
         header('Content-Type: application/json');
@@ -260,6 +314,77 @@ class AccountApiController {
         
         $this->accountModel->deleteAccount($id);
         echo json_encode(['message' => 'Đã xóa tài khoản']);
+=======
+    // PUT /api/account/{id} - Cập nhật tài khoản
+    public function update($id) {
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        $action = $data['action'] ?? 'update_profile';
+
+        switch ($action) {
+            case 'update_profile':
+                $fullname = $data['fullname'] ?? '';
+                $phone    = $data['phone']    ?? '';
+                $address  = $data['address']  ?? '';
+                $result = $this->accountModel->updateProfile($id, $fullname, $phone, $address);
+                break;
+
+            case 'update_email':
+                $email = $data['email'] ?? '';
+                $result = $this->accountModel->updateEmail($id, $email);
+                break;
+
+            case 'update_avatar':
+                $avatar = $data['avatar'] ?? '';
+                $result = $this->accountModel->updateAvatar($id, $avatar);
+                break;
+
+            case 'change_password':
+                $newPassword = $data['new_password'] ?? '';
+                $result = $this->accountModel->changePassword($id, $newPassword);
+                break;
+
+            case 'update_role':
+                $role = $data['role'] ?? '';
+                $result = $this->accountModel->updateRole($id, $role);
+                break;
+
+            case 'toggle_lock':
+                $result = $this->accountModel->toggleLock($id);
+                break;
+
+            case 'save_security_question':
+                $question = $data['security_question'] ?? '';
+                $answer   = $data['security_answer']   ?? '';
+                $result = $this->accountModel->saveSecurityQuestion($id, $question, $answer);
+                break;
+
+            default:
+                http_response_code(400);
+                echo json_encode(['message' => 'Invalid action']);
+                return;
+        }
+
+        if ($result) {
+            echo json_encode(['message' => 'Account updated successfully']);
+        } else {
+            http_response_code(400);
+            echo json_encode(['message' => 'Account update failed']);
+        }
+    }
+
+    // DELETE /api/account/{id} - Xóa tài khoản
+    public function destroy($id) {
+        header('Content-Type: application/json');
+        $result = $this->accountModel->deleteAccount($id);
+        if ($result) {
+            echo json_encode(['message' => 'Account deleted successfully']);
+        } else {
+            http_response_code(400);
+            echo json_encode(['message' => 'Account deletion failed']);
+        }
+>>>>>>> bb8e51174b687910ab3573f6eedac9644ec186a6
     }
 }
 ?>
