@@ -26,8 +26,14 @@ class CategoryModel {
         $query = "INSERT INTO " . $this->table_name . " (name, description) 
                   VALUES(:name, :description)";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':name', htmlspecialchars(strip_tags($name)));
-        $stmt->bindParam(':description', htmlspecialchars(strip_tags($description)));
+        
+        // ✅ Gán vào biến trước để tránh lỗi "Only variables should be passed by reference"
+        $cleanName = htmlspecialchars(strip_tags($name));
+        $cleanDesc = htmlspecialchars(strip_tags($description));
+        
+        $stmt->bindParam(':name', $cleanName);
+        $stmt->bindParam(':description', $cleanDesc);
+        
         return $stmt->execute();
     }
 
@@ -36,9 +42,15 @@ class CategoryModel {
                   SET name = :name, description = :description 
                   WHERE id = :id";
         $stmt = $this->conn->prepare($query);
+        
+        // ✅ Gán vào biến trước
+        $cleanName = htmlspecialchars(strip_tags($name));
+        $cleanDesc = htmlspecialchars(strip_tags($description));
+        
         $stmt->bindParam(':id', $id);
-        $stmt->bindParam(':name', htmlspecialchars(strip_tags($name)));
-        $stmt->bindParam(':description', htmlspecialchars(strip_tags($description)));
+        $stmt->bindParam(':name', $cleanName);
+        $stmt->bindParam(':description', $cleanDesc);
+        
         return $stmt->execute();
     }
 

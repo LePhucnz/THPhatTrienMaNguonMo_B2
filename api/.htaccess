@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# Cho phép truy cập file tĩnh
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Cho phép truy cập thư mục assets
+RewriteRule ^assets/ - [L]
+
+# Redirect /api/ → /api/index.php
+RewriteRule ^$ index.php [L]
+
+# Rewrite tất cả request khác → router.php
+RewriteRule ^(.+)$ router.php [QSA,L]

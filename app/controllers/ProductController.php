@@ -606,5 +606,22 @@ class ProductController {
         }
         include 'app/views/product/orderConfirmation.php';
     }
+    // Hiển thị danh sách sản phẩm với jQuery
+    public function list_jquery() {
+        include 'app/views/product/list_jquery.php';
+    }
+    
+    // Form thêm sản phẩm với jQuery
+    public function add_jquery() {
+        $this->requireAdmin();
+        include 'app/views/product/add_jquery.php';
+    }
+    
+    // Form sửa sản phẩm với jQuery
+    public function edit_jquery($id) {
+        $this->requireAdmin();
+        $editId = $id;
+        include 'app/views/product/edit_jquery.php';
+    }
 }
 ?>
